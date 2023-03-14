@@ -7,7 +7,7 @@ import (
 
 type entry[K comparable, V interface{}] struct {
 	key   K
-	Value V
+	value V
 }
 
 type Cache[K comparable, V interface{}] struct {
@@ -46,12 +46,12 @@ func (c *Cache[K, V]) Put(key K, value V) {
 	defer c.lock.Unlock()
 	ele, ok := c.m[key]
 	if ok {
-		c.curSize -= c.sizeCal(key, ele.Value.(*entry[K, V]).Value)
-		ele.Value = &entry[K, V]{key: key, Value: value}
+		c.curSize -= c.sizeCal(key, ele.Value.(*entry[K, V]).value)
+		ele.Value = &entry[K, V]{key: key, value: value}
 		c.curSize += c.sizeCal(key, value)
 		c.li.MoveToFront(ele)
 	} else {
-		ele = c.li.PushFront(&entry[K, V]{key: key, Value: value})
+		ele = c.li.PushFront(&entry[K, V]{key: key, value: value})
 		c.m[key] = ele
 		c.curSize += c.sizeCal(key, value)
 	}
@@ -65,14 +65,14 @@ func (c *Cache[K, V]) Get(key K) (value V, ok bool) {
 	if !ok {
 		return value, false
 	}
-	return ele.Value.(*entry[K, V]).Value, true
+	return ele.Value.(*entry[K, V]).value, true
 }
 
 func (c *Cache[K, V]) AllKeys() []K {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
-	var ks []K
+	ks := make([]K, 0, len(c.m))
 
 	for k := range c.m {
 		ks = append(ks, k)
@@ -92,8 +92,8 @@ func (c *Cache[K, V]) removeUnlock(key K) {
 	if ok {
 		delete(c.m, key)
 		c.li.Remove(ele)
-		c.curSize -= c.sizeCal(key, ele.Value.(*entry[K, V]).Value)
-		c.expireCallback(key, ele.Value.(*entry[K, V]).Value)
+		c.curSize -= c.sizeCal(key, ele.Value.(*entry[K, V]).value)
+		c.expireCallback(key, ele.Value.(*entry[K, V]).value)
 	}
 }
 
