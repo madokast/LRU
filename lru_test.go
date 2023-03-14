@@ -1,6 +1,7 @@
 package lru
 
 import (
+	"sort"
 	"testing"
 )
 
@@ -70,5 +71,21 @@ func TestCache_Callback(t *testing.T) {
 	cache.Put(1, value)
 	if value[0] != 123 {
 		panic(value)
+	}
+}
+
+func TestCache_AllKeys(t *testing.T) {
+	cache := New[int, int](5, nil, nil)
+	for i := 0; i < 10; i++ {
+		cache.Put(i, i*10)
+	}
+	keys := cache.AllKeys()
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
+	for i := range keys {
+		if keys[i] != i+5 {
+			panic(keys)
+		}
 	}
 }

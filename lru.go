@@ -68,6 +68,19 @@ func (c *Cache[K, V]) Get(key K) (value V, ok bool) {
 	return ele.Value.(*entry[K, V]).Value, true
 }
 
+func (c *Cache[K, V]) AllKeys() []K {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	var ks []K
+
+	for k := range c.m {
+		ks = append(ks, k)
+	}
+
+	return ks
+}
+
 func (c *Cache[K, V]) Remove(key K) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
