@@ -43,6 +43,7 @@ func New[K comparable, V interface{}](maxSize int, expireCallback func(key K, va
 
 func (c *Cache[K, V]) Put(key K, value V) {
 	c.lock.Lock()
+	defer c.lock.Unlock()
 	ele, ok := c.m[key]
 	if ok {
 		c.curSize -= c.sizeCal(key, ele.Value.(*entry[K, V]).Value)
@@ -54,8 +55,7 @@ func (c *Cache[K, V]) Put(key K, value V) {
 		c.m[key] = ele
 		c.curSize += c.sizeCal(key, value)
 	}
-	c.lock.Unlock()
-	c.expire()
+	c.expireUnlock()
 }
 
 func (c *Cache[K, V]) Get(key K) (value V, ok bool) {
@@ -84,6 +84,10 @@ func (c *Cache[K, V]) AllKeys() []K {
 func (c *Cache[K, V]) Remove(key K) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
+	c.removeUnlock(key)
+}
+
+func (c *Cache[K, V]) removeUnlock(key K) {
 	ele, ok := c.m[key]
 	if ok {
 		delete(c.m, key)
@@ -97,9 +101,9 @@ func (c *Cache[K, V]) Size() int {
 	return c.curSize
 }
 
-func (c *Cache[K, V]) expire() {
+func (c *Cache[K, V]) expireUnlock() {
 	for c.curSize > c.maxSize && c.li.Len() > 0 {
 		back := c.li.Back()
-		c.Remove(back.Value.(*entry[K, V]).key)
+		c.removeUnlock(back.Value.(*entry[K, V]).key)
 	}
 }
