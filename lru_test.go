@@ -89,3 +89,17 @@ func TestCache_AllKeys(t *testing.T) {
 		}
 	}
 }
+
+func TestCache_RemoveAll(t *testing.T) {
+	cache := New[int, int](5, nil, nil)
+	for i := 0; i < 10; i++ {
+		cache.Put(i, i*10)
+	}
+	cache.RemoveAll()
+	if cache.Size() != 0 {
+		panic(cache.Size())
+	}
+	if cache.Number() != 0 {
+		panic(cache.Number())
+	}
+}

@@ -97,8 +97,25 @@ func (c *Cache[K, V]) removeUnlock(key K) {
 	}
 }
 
+func (c *Cache[K, V]) RemoveAll() {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	for k, ele := range c.m {
+		c.expireCallback(k, ele.Value.(*entry[K, V]).value)
+	}
+	c.li = list.New()
+	c.m = map[K]*list.Element{}
+	c.curSize = 0
+}
+
+// Size 返回内存占用
 func (c *Cache[K, V]) Size() int {
 	return c.curSize
+}
+
+// Number 返回元素个数
+func (c *Cache[K, V]) Number() int {
+	return c.li.Len()
 }
 
 func (c *Cache[K, V]) expireUnlock() {
