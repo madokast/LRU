@@ -103,3 +103,22 @@ func TestCache_RemoveAll(t *testing.T) {
 		panic(cache.Number())
 	}
 }
+
+func TestCache_Get1(t *testing.T) {
+	cache := New[int, int](2, func(key int, value int) {
+		t.Log("remove", key, value)
+	}, nil)
+	cache.Put(100, 255)
+	for i := 0; i < 10; i++ {
+		cache.Put(i, i)
+		_, ok := cache.Get(100)
+		if !ok {
+			t.Error("100 removed")
+		}
+	}
+	val, ok := cache.Get(100)
+	if !ok {
+		t.Error("100 removed")
+	}
+	t.Log(val)
+}

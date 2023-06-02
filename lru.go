@@ -59,12 +59,13 @@ func (c *Cache[K, V]) Put(key K, value V) {
 }
 
 func (c *Cache[K, V]) Get(key K) (value V, ok bool) {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	ele, ok := c.m[key]
 	if !ok {
 		return value, false
 	}
+	c.li.MoveToFront(ele)
 	return ele.Value.(*entry[K, V]).value, true
 }
 
