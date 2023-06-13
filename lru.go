@@ -132,7 +132,29 @@ func (c *Cache[K, V]) RemoveIf(remove func(K) bool) {
 		next = cur.Next() // 提前记录 next，因为 cur 可能被移除
 		key := cur.Value.(*Entry[K, V]).key
 		if remove(key) {
-			c.removeUnlock(key) // 正常移除即可
+			delete(c.m, key)
+			c.li.Remove(cur)
+			c.curSize -= c.sizeCal(key, cur.Value.(*Entry[K, V]).value)
+			c.expireCallback(key, cur.Value.(*Entry[K, V]).value)
+		}
+		cur = next // 注意不能用 cur = cur.next()
+	}
+}
+
+// RemoveIfNoExpire 不执行失效函数
+func (c *Cache[K, V]) RemoveIfNoExpire(remove func(K) bool) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	cur := c.li.Front()
+	var next *list.Element
+	for cur != nil {
+		next = cur.Next() // 提前记录 next，因为 cur 可能被移除
+		key := cur.Value.(*Entry[K, V]).key
+		if remove(key) {
+			delete(c.m, key)
+			c.li.Remove(cur)
+			c.curSize -= c.sizeCal(key, cur.Value.(*Entry[K, V]).value)
 		}
 		cur = next // 注意不能用 cur = cur.next()
 	}
@@ -154,6 +176,15 @@ func (c *Cache[K, V]) RemoveAll() {
 	for k, ele := range c.m {
 		c.expireCallback(k, ele.Value.(*Entry[K, V]).value)
 	}
+	c.li = list.New()
+	c.m = map[K]*list.Element{}
+	c.curSize = 0
+}
+
+// RemoveAllNoExpire 不执行失效函数
+func (c *Cache[K, V]) RemoveAllNoExpire() {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	c.li = list.New()
 	c.m = map[K]*list.Element{}
 	c.curSize = 0
