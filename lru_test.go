@@ -1,6 +1,7 @@
 package lru
 
 import (
+	"reflect"
 	"sort"
 	"testing"
 )
@@ -121,4 +122,83 @@ func TestCache_Get1(t *testing.T) {
 		t.Error("100 removed")
 	}
 	t.Log(val)
+}
+
+func TestCache_Scan(t *testing.T) {
+	cache := New[int, int](5, nil, nil)
+	for i := 0; i < 10; i++ {
+		cache.Put(i, i*10)
+		_, _ = cache.Get(2)
+	}
+	var ks []int
+	cache.Scan(func(k int, v int) bool {
+		t.Log(k, v)
+		ks = append(ks, k)
+		return true
+	})
+	if len(ks) != 5 {
+		panic(ks)
+	}
+	if ks[0] != 2 {
+		panic(ks)
+	}
+	if ks[1] != 9 {
+		panic(ks)
+	}
+	if ks[4] != 6 {
+		panic(ks)
+	}
+}
+
+func TestCache_RemoveIf(t *testing.T) {
+	cache := New[int, int](10, nil, nil)
+	for i := 0; i < 10; i++ {
+		cache.Put(i, i*10)
+	}
+
+	keys := cache.AllKeys()
+	t.Log(keys)
+	size := cache.Size()
+	t.Log(size)
+	if !reflect.DeepEqual(keys, []int{9, 8, 7, 6, 5, 4, 3, 2, 1, 0}) {
+		panic(keys)
+	}
+	if size != 10 {
+		panic(size)
+	}
+
+	cache.RemoveIf(func(k int) bool {
+		return k%2 != 0
+	})
+
+	keys = cache.AllKeys()
+	t.Log(keys)
+	size = cache.Size()
+	t.Log(size)
+	if !reflect.DeepEqual(keys, []int{8, 6, 4, 2, 0}) {
+		panic(keys)
+	}
+	if size != 5 {
+		panic(size)
+	}
+}
+
+func TestCache_LeastRecentlyUsed(t *testing.T) {
+	cache := New[int, int](10, nil, nil)
+	cache.Put(1, 2)
+	cache.Put(3, 4)
+
+	kv, _ := cache.LeastRecentlyUsed()
+	t.Log(kv)
+	if kv.key != 1 {
+		panic(kv)
+	}
+
+	_, _ = cache.Get(1)
+
+	kv, _ = cache.LeastRecentlyUsed()
+	t.Log(kv)
+	if kv.key != 3 {
+		panic(kv)
+	}
 }
