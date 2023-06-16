@@ -69,6 +69,19 @@ func (c *Cache[K, V]) Get(key K) (value V, ok bool) {
 	return ele.Value.(*Entry[K, V]).value, true
 }
 
+// GetNoMove 类似 Get 但是不会将命中的 KV 对移动到头部
+// 如果获取元素操作都调用 GetNoMove，LRU 将退化为 FIFO
+// GetNoMove 优势在于性能比 Get 高
+func (c *Cache[K, V]) GetNoMove(key K) (value V, ok bool) {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	ele, ok := c.m[key]
+	if !ok {
+		return value, false
+	}
+	return ele.Value.(*Entry[K, V]).value, true
+}
+
 // LeastRecentlyUsed 返回最近最少使用的 KV，即队列中最后一个 KV
 // 如果容器为空，返回 nil, false
 func (c *Cache[K, V]) LeastRecentlyUsed() (*Entry[K, V], bool) {
