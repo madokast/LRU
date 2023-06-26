@@ -47,7 +47,7 @@ func (c *Cache[K, V]) Put(key K, value V) {
 	ele, ok := c.m[key]
 	if ok {
 		c.curSize -= c.sizeCal(key, ele.Value.(*Entry[K, V]).value)
-		ele.Value = &Entry[K, V]{key: key, value: value}
+		ele.Value.(*Entry[K, V]).value = value
 		c.curSize += c.sizeCal(key, value)
 		c.li.MoveToFront(ele)
 	} else {
